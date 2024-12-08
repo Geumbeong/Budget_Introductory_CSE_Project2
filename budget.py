@@ -218,15 +218,21 @@ def change_category():
 
     # 수정할 항목 선택 및 이름 수정
     try:
-        choices = list(map(int, input("\n수정할 항목 1개나 병합할 항목들 2개 이상을 선택해주세요: ").split(',')))
+        input_choices = input("\n수정할 항목 1개나 병합할 항목들 2개 이상을 선택해주세요: ")
+        if not re.match(r'^[0-9]+(,[0-9]+)*$', input_choices):
+            print("유효한 번호를 입력해주세요. 메인 메뉴로 돌아갑니다.")
+            return
+        choices = list(map(int, input_choices.split(',')))
+        # 입력된 번호가 유효한지 체크
         if any(choice < 1 or choice > len(display_items) for choice in choices):
             print("잘못된 번호입니다. 메인 메뉴로 돌아갑니다.")
-            return()
+            return() 
         selected_items = [display_items[choice - 1] for choice in choices]  # display_items에서 선택된 항목 가져오기
         selected_indices = [choice - 1 for choice in choices]  # 선택된 항목의 인덱스
+        print(selected_indices)
     except ValueError:
         print("유효한 번호를 입력해주세요. 메인 메뉴로 돌아갑니다.")
-        return()
+        return()  # 프로그램 종료
 
     # 선택한 항목의 section 검증
     section_set = {item['section'] for item in selected_items}
