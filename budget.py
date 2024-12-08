@@ -60,7 +60,7 @@ def category_menu():
     print("\n=======================\n")
     print("카테고리 관리 메뉴")
     print("a/add 카테고리 추가하기")
-    print("e/edit 카테고리 편집하기")
+    print("e/edit 카테고리 편집/병합하기")
     print("r/remove 카테고리 삭제하기")
     print("u/update 미분류 항목 이름 수정하기")
     print("h/home 돌아가기")
