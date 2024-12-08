@@ -561,13 +561,11 @@ def add_to_category(income_expense_input, validate_income_expense):
                         amount = 0  # 두 번째 열이 없으면 금액을 0으로 처리
 
                     
-                    # is_error = False
                     i = 0
                     start_category = False
 
                     while(not category_found):
                         category_name = income_expense_input[CATEGORY_INPUT + i]  # 입력된 카테고리 이름
-                    
 
                         # 아무 카테고리에도 속하지 않을 경우
                         if category_name == "[]":
@@ -575,9 +573,12 @@ def add_to_category(income_expense_input, validate_income_expense):
 
                         # 맨 처음 괄호
                         try:
-                            if category_name[0] == "[":
-                                category_name = category_name[1:]
-                                start_category = True
+                            if not start_category:
+                                if category_name[0] == "[":
+                                    category_name = category_name[1:]
+                                    start_category = True
+                                else:
+                                    return False
                         except IndexError:
                             # 빈 문자열일 경우
                             #is_error = True
@@ -624,13 +625,97 @@ def add_to_category(income_expense_input, validate_income_expense):
 def delete_to_category(income_expense_input, validate_income_expense):
     updated_rows = []  # 업데이트된 내용을 저장할 리스트
     category_found = False
-    category_name = income_expense_input[CATEGORY]
     amount_to_delete = int(income_expense_input[PRICE])
+    category_validated = 0
 
     with open('category.csv', 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         is_income_section = True
+        current_section = None
 
+        for row in reader:
+            if row:  # 비어있지 않은 행에 대해서만 처리
+                if row[0] == '#':
+                    # 수입/지출 구분점에서 #을 추가하고, current_section 업데이트
+                    updated_rows.append(row)
+                    current_section = 'expense'
+                elif current_section is None:
+                    # # 전이면 수입 섹션
+                    current_section = 'income'
+                    updated_rows.append(row)
+                else:
+                    # 카테고리 확인
+                    category = row[0].strip()  # 카테고리 이름
+                    # 두 번째 열이 있을 경우에만 금액 처리
+                    if len(row) > 1:
+                        try:
+                            amount = int(row[1].strip())  # 기존 금액
+                        except ValueError:
+                            amount = 0  # 금액이 숫자가 아닌 경우 0으로 처리
+                    else:
+                        amount = 0  # 두 번째 열이 없으면 금액을 0으로 처리
+
+                    
+                    i = 0
+                    start_category = False
+
+                    while(not category_found):
+                        category_name = income_expense_input[CATEGORY_INPUT + i]  # 입력된 카테고리 이름
+
+                        # 아무 카테고리에도 속하지 않을 경우
+                        if category_name == "[]":
+                            category_found = True
+
+                        # 맨 처음 괄호
+                        try:
+                            if not start_category:
+                                if category_name[0] == "[":
+                                    category_name = category_name[1:]
+                                    start_category = True
+                                else:
+                                    return False
+                        except IndexError:
+                            # 빈 문자열일 경우
+                            #is_error = True
+                            return False
+
+                        # 맨 마지막 괄호
+                        try:
+                            if category_name[len(category_name) - 1] == "]" and start_category:
+                                category_name = category_name[:-1]
+                                category_count = i + 1
+                        except IndexError:
+                            # is_error = True
+                            return False
+
+                        # 해당 카테고리가 맞고, 올바른 섹션인지 확인
+                        if category == category_name and current_section == validate_income_expense:
+                            amount -= amount_to_delete  # 금액 업데이트  
+                            category_validated += 1
+                            if category_count == category_validated:
+                                category_found = True
+                        
+                        i += 1
+                        # 입력받은 카테고리가 없을 경우
+                        if len(income_expense_input) <= CATEGORY_INPUT + i:
+                            break
+
+
+                    # 업데이트된 행 추가
+                    updated_rows.append([category, amount])
+
+
+    # 카테고리를 찾지 못했을 경우 False 반환
+    if not category_found:
+        return False
+    
+    # 업데이트된 내용을 파일에 쓰기
+    with open('category.csv', 'w', encoding='utf-8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(updated_rows)
+    return True
+
+'''
         for row in reader:
             if row:  # 비어있지 않은 행에 대해서만 처리
                 # 섹션 확인
@@ -641,7 +726,9 @@ def delete_to_category(income_expense_input, validate_income_expense):
 
                 # 카테고리와 섹션이 일치하는 경우 금액 삭제
                 if ((is_income_section and validate_income_expense == 'income') or
-                    (not is_income_section and validate_income_expense == 'expense')) and row[0].strip() == category_name:
+                    (not is_income_section and validate_income_expense == 'expense')) :
+
+                    # and row[0].strip() == category_name:
                     amount = max(int(row[1].strip()) - amount_to_delete, 0)  # 금액 삭제 후 최소 0으로 제한
                     updated_rows.append([category_name, str(amount)])  # 수정된 금액 추가
                     category_found = True  # 카테고리 찾음
@@ -650,12 +737,9 @@ def delete_to_category(income_expense_input, validate_income_expense):
 
     if not category_found:
         return False
-
-    # 업데이트된 내용을 파일에 쓰기
-    with open('category.csv', 'w', encoding='utf-8', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(updated_rows)
-    return True
+'''
+    
+    
 
 def validate_and_parse_date(data_input):
     # 정규 표현식 패턴: 2024-05-12, 2024/05/12, 2024,05,12 형식만 허용
@@ -1135,7 +1219,11 @@ while(1):
                               if delete_record(value):
                                   print("정상적으로 삭제되었습니다.")
                                   if(not validate_income_expense()):
-                                      income_expense_input = income_expense_menu()
+                                      print("\n=======================\n")
+                                      print("i/income 수입 추가하기")
+                                      print("e/expense 지출 추가하기")
+                                      print("d/dir 수입 내역 보기")
+                                      print("h/home 돌아가기")
                                       break
                                   print("\n=======================\n")
                                   inex_period_records()
