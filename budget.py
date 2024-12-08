@@ -491,7 +491,7 @@ def print_specific_category():
                 if (category_num == '0'):
                     return '[]'
                 return display_list[int(category_num) - 1].get('name')
-            print("잘못된 값을 입력하엿습니다. 다시 입력해주세요. \n")
+            print("잘못된 값을 입력하였습니다. 다시 입력해주세요. \n")
         elif specific_category_input == 'n':
             print()
             return '*';
