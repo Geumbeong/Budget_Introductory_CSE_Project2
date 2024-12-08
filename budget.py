@@ -462,7 +462,6 @@ def print_date():
     if (not category_num == '*'):
         for entry in plist[:]:
             if category_num not in entry[3]:
-                print(entry)
                 plist.remove(entry)
 
     for i in plist[:]:
