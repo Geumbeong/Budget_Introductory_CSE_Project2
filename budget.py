@@ -229,7 +229,6 @@ def change_category():
             return() 
         selected_items = [display_items[choice - 1] for choice in choices]  # display_items에서 선택된 항목 가져오기
         selected_indices = [choice - 1 for choice in choices]  # 선택된 항목의 인덱스
-        print(selected_indices)
     except ValueError:
         print("유효한 번호를 입력해주세요. 메인 메뉴로 돌아갑니다.")
         return()  # 프로그램 종료
