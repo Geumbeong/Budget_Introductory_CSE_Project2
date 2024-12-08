@@ -447,9 +447,11 @@ def print_date():
         print("문법형식에 맞게 다시 입력해주세요.")
         
     category_num = print_specific_category()
+
     if (not category_num == '*'):
         for entry in plist[:]:
             if category_num not in entry[3]:
+                print(entry)
                 plist.remove(entry)
 
     for i in plist[:]:
@@ -500,7 +502,7 @@ def print_specific_category():
             category_num = input("출력할 카테고리의 번호를 입력해주세요 : ")
             while(re.fullmatch(r'^[0-9]\d*$',category_num) and int(category_num) <= len(display_list)):
                 if (category_num == '0'):
-                    return '[]'
+                    return ''
                 return display_list[int(category_num) - 1].get('name')
             print("잘못된 값을 입력하였습니다. 다시 입력해주세요. \n")
         elif specific_category_input == 'n':
