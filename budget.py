@@ -183,7 +183,7 @@ def category_list_print():
 
 # 카테고리 편집 함수
 def change_category():
-    # 카테고리 목록 출력 및 선택
+    # 카테고리 목록 출력 및 선택ㅇ
     display_items = category_list_print()
 
     # 수정할 항목 선택 및 이름 수정
