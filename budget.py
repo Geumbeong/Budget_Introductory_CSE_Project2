@@ -768,10 +768,6 @@ def validate_number(income_expense_input):
         print(f"오류 : 입력하신 금액 입력 형식이 올바르지 않습니다. (금액은 음수일 수 없습니다.)")
         return False
 
-    elif price.startswith(' '):
-        print(f"오류 : 입력하신 금액 입력 형식이 올바르지 않습니다. (금액은 숫자로만 표현되어야 합니다.)")
-        return False
-
     # 맨 앞이 0으로 시작하는지 확인 (단, 숫자가 '0'인 경우는 허용)
     if price.startswith('0') and len(price) > 1:
         print(f"오류 : 입력하신 금액 입력 형식이 올바르지 않습니다. (금액은 0으로 시작할 수 없습니다.)")
@@ -782,6 +778,8 @@ def validate_number(income_expense_input):
     except :
         print(f"오류 : 입력하신 금액 입력 형식이 올바르지 않습니다. (금액은 숫자로만 표현되어야 합니다.)")
         return False
+
+    income_expense_input[PRICE_INPUT] = price.strip()
 
     return True
 
