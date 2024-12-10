@@ -245,7 +245,6 @@ def change_category():
     if not re.match(r'^[a-zA-Z가-힣0-9 ]*$', new_name):
         print("유효한 이름을 입력해주세요. 메인 메뉴로 돌아갑니다.")
         return()  # 프로그램 종료
-    new_amount = sum(int(item['amount']) for item in selected_items)
 
     deleted_sections = []
     for index in sorted(selected_indices, reverse=True):  # 역순으로 삭제
@@ -264,12 +263,9 @@ def change_category():
 
     existing_item = next((item for item in section_items if item['name'] == new_name), None)
 
-    if existing_item:
-        # 기존 항목이 존재하면 amount 값만 업데이트
-        existing_item['amount'] = str(int(existing_item['amount']) + new_amount)
-    else:
+    if not existing_item:
         # 기존 항목이 없으면 새로운 항목 추가
-        new_item = {'name': new_name, 'amount': str(new_amount)}
+        new_item = {'name': new_name, 'amount': '0'}  # amount는 update_category_amounts()에서 처리
         if deleted_sections and deleted_sections[0] == 'income':
             income_items.append(new_item)
         else:
