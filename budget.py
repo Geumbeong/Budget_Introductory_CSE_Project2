@@ -283,9 +283,7 @@ def change_category():
     filename = selected_items[0]['section'] + '.csv'
     for old_name in old_names:
         update_csv(filename, old_name, new_name)    # 입출금항목 카테고리 수정
-        # [수입1,수입2] 에서 "수입1"을 "수입2"로 변경하면, 
-        # update_csv() 로직대로면 [수입2,수입2]가 되므로 한 번 더 실행해서 중복제거
-        update_csv(filename, new_name, new_name)
+    update_csv(filename, new_name, new_name)        # 중복 제거
     update_category_amounts(filename, new_name)     # 수정된 입출금항목대로 cateogory.csv 의 카테고리별 총합 재작성
 
     print("항목이 성공적으로 수정/병합 되었습니다!")
@@ -301,48 +299,55 @@ def update_csv(file_name, old_category, new_category):
         for row in reader:
             if row:
                 if row[3].startswith('[') and row[3].endswith(']'):
-                    if old_category in row[3]:
+                    if old_category == row[3][1:-1]:
                         categories = row[3][1:-1].split(',')  # '['와 ']'를 제외한 부분을 분리
                         categories = [category.strip() for category in categories]  # 공백 제거
                         categories = [new_category if category == old_category else category for category in categories]
-
                         row[3] = f"[{', '.join(categories)}]"
                 else:
-                    if old_category in row[3]:
+                    if old_category == row[3][1:]:
                         categories = row[3][1:].split(',')  # '['를 제외한 부분을 분리
                         categories = [category.strip() for category in categories]  # 공백 제거
                         categories = [new_category if category == old_category else category for category in categories]
                         row[3] = f"[{', '.join(categories)}"
-                    for i in range(4, len(row)):                        
-                        if row[i].endswith(']'):
-                            if old_category in row[i]:
-                                for index in range (i, 3, -1):
-                                    if new_category in row[index]:
-                                        count = 1
-                                if count == 1:
-                                    row[i-1] = f"{row[i-1].rstrip(',')}]"  # ',' 제거 후 ']' 추가
-                                    row[i] = None
-                                else:
-                                    categories = row[i][:-1].split(',')  # ']'를 제외한 부분을 분리
-                                    categories = [category.strip() for category in categories]  # 공백 제거
-                                    categories = [new_category if category == old_category else category for category in categories]
-                                    row[i] = f"{', '.join(categories)}]"
-                                count = 0
-                            break
-                        else:
-                            if old_category in row[i]:
-                                for index in range (i, 3, -1):
-                                    if new_category in row[index]:
-                                        count = 1
-
-                                if count == 1:
-                                    row[i] = None
-                                else:
-                                    categories = row[i].split(',')
-                                    categories = [category.strip() for category in categories]  # 공백 제거
-                                    categories = [new_category if category == old_category else category for category in categories]
-                                    row[i] = f"{', '.join(categories)}]"
-                                count = 0
+                    for i in range(4, len(row)+1):
+                        if row[i]:                        
+                            if row[i].endswith(']'):
+                                if old_category == row[i][:-1]:
+                                    for index in range (i-1, 2, -1):
+                                        if index == 3:
+                                            if new_category == row[index][1:]:
+                                                count = 1
+                                        else:
+                                            if new_category == row[index]:
+                                                count = 1
+                                    if count == 1:
+                                        row[i-1] = f"{row[i-1].rstrip(',')}]"  # ',' 제거 후 ']' 추가
+                                        row[i] = None
+                                    else:
+                                        categories = row[i][:-1].split(',')  # ']'를 제외한 부분을 분리
+                                        categories = [category.strip() for category in categories]  # 공백 제거
+                                        categories = [new_category if category == old_category else category for category in categories]
+                                        row[i] = f"{', '.join(categories)}]"
+                                    count = 0
+                                break
+                            else:
+                                if old_category == row[i]:
+                                    for index in range (i-1, 2, -1):
+                                        if index == 3:
+                                            if new_category == row[index][1:]:
+                                                count = 1
+                                        else:
+                                            if new_category == row[index]:
+                                                count = 1
+                                    if count == 1:
+                                        row[i] = None
+                                    else:
+                                        categories = row[i].split(',')
+                                        categories = [category.strip() for category in categories]  # 공백 제거
+                                        categories = [new_category if category == old_category else category for category in categories]
+                                        row[i] = f"{', '.join(categories)}"
+                                    count = 0
 
                 rows.append([item for item in row if item is not None])
 
