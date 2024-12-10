@@ -256,12 +256,24 @@ def change_category():
             expense_items.remove(removed_item)
         deleted_sections.append(removed_item['section'])
 
-    # 새 항목 추가
-    new_item = {'name': new_name, 'amount': str(new_amount)}
+    # 수정된 항목 처리
     if deleted_sections and deleted_sections[0] == 'income':
-        income_items.append(new_item)
+        section_items = income_items
     else:
-        expense_items.insert(0, new_item)
+        section_items = expense_items
+
+    existing_item = next((item for item in section_items if item['name'] == new_name), None)
+
+    if existing_item:
+        # 기존 항목이 존재하면 amount 값만 업데이트
+        existing_item['amount'] = str(int(existing_item['amount']) + new_amount)
+    else:
+        # 기존 항목이 없으면 새로운 항목 추가
+        new_item = {'name': new_name, 'amount': str(new_amount)}
+        if deleted_sections and deleted_sections[0] == 'income':
+            income_items.append(new_item)
+        else:
+            expense_items.insert(0, new_item)
 
     # 수정된 내용 저장
     with open('category.csv', 'w', encoding='utf-8', newline='') as file:
@@ -274,28 +286,156 @@ def change_category():
 
     filename = selected_items[0]['section'] + '.csv'
     for old_name in old_names:
-        update_csv(filename, old_name, new_name)
+        update_csv(filename, old_name, new_name)    # 입출금항목 카테고리 수정
+        # [수입1,수입2] 에서 "수입1"을 "수입2"로 변경하면, 
+        # update_csv() 로직대로면 [수입2,수입2]가 되므로 한 번 더 실행해서 중복제거
+        update_csv(filename, new_name, new_name)
+    update_category_amounts(filename, new_name)     # 수정된 입출금항목대로 cateogory.csv 의 카테고리별 총합 재작성
 
     print("항목이 성공적으로 수정/병합 되었습니다!")
 
 # 카테고리 변경으로 인한 csv 업데이트
 def update_csv(file_name, old_category, new_category):
     rows = []
+    count = 0
 
     # 기존 내용을 읽어서 수정
     with open(file_name, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
             if row:
-                if len(row) > 2 and old_category in row[2]:
-                    # row[2]에서 ','를 기준으로 각 카테고리 분리
-                    categories = row[2][1:-1].split(',')  # '['와 ']'를 제외한 부분을 분리
-                    categories = [category.strip() for category in categories]  # 공백 제거
-                    categories = [new_category if category == old_category else category for category in categories]
+                if row[3].startswith('[') and row[3].endswith(']'):
+                    if old_category in row[3]:
+                        categories = row[3][1:-1].split(',')  # '['와 ']'를 제외한 부분을 분리
+                        categories = [category.strip() for category in categories]  # 공백 제거
+                        categories = [new_category if category == old_category else category for category in categories]
 
-                    row[2] = f"[{', '.join(categories)}]"
+                        row[3] = f"[{', '.join(categories)}]"
+                else:
+                    if old_category in row[3]:
+                        categories = row[3][1:].split(',')  # '['를 제외한 부분을 분리
+                        categories = [category.strip() for category in categories]  # 공백 제거
+                        categories = [new_category if category == old_category else category for category in categories]
+                        row[3] = f"[{', '.join(categories)}"
+                    for i in range(4, len(row)):                        
+                        if row[i].endswith(']'):
+                            if old_category in row[i]:
+                                for index in range (i, 3, -1):
+                                    if new_category in row[index]:
+                                        count = 1
+                                if count == 1:
+                                    row[i-1] = f"{row[i-1].rstrip(',')}]"  # ',' 제거 후 ']' 추가
+                                    row[i] = None
+                                else:
+                                    categories = row[i][:-1].split(',')  # ']'를 제외한 부분을 분리
+                                    categories = [category.strip() for category in categories]  # 공백 제거
+                                    categories = [new_category if category == old_category else category for category in categories]
+                                    row[i] = f"{', '.join(categories)}]"
+                                count = 0
+                            break
+                        else:
+                            if old_category in row[i]:
+                                for index in range (i, 3, -1):
+                                    if new_category in row[index]:
+                                        count = 1
 
-                rows.append(row)
+                                if count == 1:
+                                    row[i] = None
+                                else:
+                                    categories = row[i].split(',')
+                                    categories = [category.strip() for category in categories]  # 공백 제거
+                                    categories = [new_category if category == old_category else category for category in categories]
+                                    row[i] = f"{', '.join(categories)}]"
+                                count = 0
+
+                rows.append([item for item in row if item is not None])
+
+    # 수정된 내용을 파일에 다시 저장
+    with open(file_name, 'w', encoding='utf-8', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
+
+# csv 업데이트로 인한 카테고리별 총합 업데이트
+def update_category_amounts(file_name, new_category):
+    total_amount = 0
+
+    # file_name.csv 순회하며 new_category 금액 총합 계산
+    with open(file_name, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row:
+                if row[3].startswith('[') and row[3].endswith(']'):
+                    if new_category in row[3]:  # row[3]에 new_category가 포함되어 있는지 확인
+                        try:
+                            print(1)
+                            total_amount += int(row[2])  # row[2]의 금액을 더함
+                        except ValueError:
+                            print(f"유효하지 않은 금액이 발견되었습니다: {row[2]} (무시됨)")
+                else:
+                    if new_category in row[3]:
+                        try:
+                            print(1)
+                            total_amount += int(row[2])  # row[2]의 금액을 더함
+                        except ValueError:
+                            print(f"유효하지 않은 금액이 발견되었습니다: {row[2]} (무시됨)")
+                    for i in range(4, len(row)):                        
+                        if row[i].endswith(']'):
+                            if new_category in row[i]:
+                                try:
+                                    print(1)
+                                    total_amount += int(row[2])  # row[2]의 금액을 더함
+                                except ValueError:
+                                    print(f"유효하지 않은 금액이 발견되었습니다: {row[2]} (무시됨)")
+                            break
+                        else:
+                            if new_category in row[i]:
+                                try:
+                                    print(1)
+                                    total_amount += int(row[2])  # row[2]의 금액을 더함
+                                except ValueError:
+                                    print(f"유효하지 않은 금액이 발견되었습니다: {row[2]} (무시됨)")
+
+    # category.csv 읽기
+    income_items = []
+    expense_items = []
+    current_section = 'income'
+    with open('category.csv', 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row:
+                if row[0].strip() == '#':  # 구분자 변경
+                    current_section = 'expense'
+                else:
+                    item = {
+                        'name': row[0].strip(),
+                        'amount': row[1].strip(),
+                        'section': current_section
+                    }
+                    if current_section == 'income':
+                        income_items.append(item)
+                    else:
+                        expense_items.append(item)
+
+    # 새로운 총합 금액 반영
+    if file_name == 'income.csv':  # 수입 항목 갱신
+        for item in income_items:
+            if item['name'] == new_category:
+                item['amount'] = str(total_amount)
+                break
+    elif file_name == 'expense.csv':  # 지출 항목 갱신
+        for item in expense_items:
+            if item['name'] == new_category:
+                item['amount'] = str(total_amount)
+                break
+
+    # 수정된 내용을 category.csv에 저장
+    with open('category.csv', 'w', encoding='utf-8', newline='') as file:
+        writer = csv.writer(file)
+        for item in income_items:
+            writer.writerow([item['name'], item['amount']])
+        writer.writerow(['#'])  # 구분자 추가
+        for item in expense_items:
+            writer.writerow([item['name'], item['amount']])
 
 # 카테고리 관리 함수
 def category():
