@@ -1020,125 +1020,102 @@ def inex_period_records():
         print("\n=======================\n")
         print("수입/지출 내역이 존재하지 않습니다.")
         return -1
-
-    if (len(income_records) > 0):
-    # 수입 출력
-        print("수입")
-        print("번호 날짜 / 금액 / 사유")
-        for index, record in enumerate(income_records, start=1):
-            if len(record) == 5:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음' {record[3]} {record[4]}")
+    plist=[]
+    for i in income_records:
+        i.append('수입')
+        plist.append(i)
+    for i in expense_records:
+        i.append('지출')
+        plist.append(i)
+    for i in plist:
+        elist=[]
+        for j in i[3:]:
+            if ']' in j:
+                if '[' not in j:
+                    elist.append(j[:len(j)-1])
                 else:
-                    print(f"{index} {record[1]} {record[2]} {record[3]} {record[4]}")
-            elif len(record) == 4:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음' {record[3]}")
-                else:
-                    print(f"{index} {record[1]} {record[2]} {record[3]}")
-            elif len(record) == 3:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음'")
-                else:
-                    print(f"{index} {record[1]} {record[2]}")
-            elif len(record) > 5:
-                print(f"{index}",end=" ")
-                for i,records in enumerate(record):
-                    if i == 0:
-                        continue
-                    print(f"{records}",end=" ")
-                print()
-            elif len(record) == 0:
-                print("내역이 없습니다.")
+                    elist.append(j[1:len(j)-1])
+                i.remove(j)
+                break
+            if '[' in j:
+                elist.append(j[1:])
             else:
-                print("출력 오류")
-
-
-    if (len(expense_records) > 0):
-    # 지출 출력
-        print("\n지출")
-        print("지출 내역 번호 / 날짜 / 카테고리 / 금액 / 사유")
-        for index, record in enumerate(expense_records, start=len(income_records) + 1):  # 수입 내역 번호 이후부터 시작
-            if len(record) == 5:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음' {record[3]} {record[4]}")
-                else:
-                    print(f"{index} {record[1]} {record[2]} {record[3]} {record[4]}")
-            elif len(record) == 4:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음' {record[3]}")
-                else:
-                    print(f"{index} {record[1]} {record[2]} {record[3]}")
-            elif len(record) == 3:
-                if "*" in record[2]:
-                    print(f"{index} {record[1]} '없음'")
-                else:
-                    print(f"{index} {record[1]} {record[2]}")
-            elif len(record) == 0:
-                print("내역이 없습니다.")
-            elif len(record) > 5:
-                print(f"{index}",end=" ")
-                for i,records in enumerate(record):
-                    if i == 0:
-                        continue
-                    print(f"{records}",end=" ")
-                print()
-            else:
-                print("출력 오류")
-        return -2
+                elist.append(j)
+            i.remove(j)
+        i.insert(3, elist)
+    plist = sorted(plist, key=lambda plist: (plist[1], plist[0]))
+    count=1
+    print('\n번호  날짜  수입액 지출액 [카테고리(들)] 사유')
+    for i in plist:
+        print(count, end=' ')
+        count+=1
+        print(i[1], end=' ')
+        if i[len(i)-1]=='수입':
+            print(i[2]+'    ', end=' ')
+        else:
+            print('    '+i[2], end=' ')
+        print(i[3], end=' ')
+        if len(i)==6:
+            print(i[len(i)-2])
+        else:
+            print()
+    return -2
 
 def delete_record(index):
     income_records = read_income()
     expense_records = read_expense()
     # index가 income_records의 길이 보다 작으면 income_records에서 삭제
-    if 1 <= index <= len(income_records):
+    if index <= len(income_records) + len(expense_records):
+        plist=[]
+        for i in income_records:
+            plist.append(i)
+        for i in expense_records:
+            plist.append(i)
+        plist = sorted(plist, key=lambda plist: (plist[1], plist[0]))
         etc_price = read_etc_price()
-        delete_data = income_records[index - 1]
+        delete_data = plist[index - 1]
+        if delete_data in income_records:
+            with open('etc.csv','r',encoding='utf-8') as file:
+                reader = csv.reader(file)
+                new_index = int(list(reader)[0][1]) - 1
 
-        with open('etc.csv','r',encoding='utf-8') as file:
-          reader = csv.reader(file)
-          new_index = int(list(reader)[0][1]) - 1
+                # 남은 금액 변경
+                etc_price -= int(delete_data[PRICE])
+                with open('etc.csv','w',encoding='utf-8') as file:
+                    file.write(str(etc_price)+','+str(new_index))
 
-        # 남은 금액 변경
-        etc_price -= int(delete_data[PRICE])
-        with open('etc.csv','w',encoding='utf-8') as file:
-            file.write(str(etc_price)+','+str(new_index))
+                # 카테고리 가격 변경
+                delete_to_category(delete_data, 'income')
 
-        # 카테고리 가격 변경
-        delete_to_category(delete_data, 'income')
+                # 삭제
+                del income_records[income_records.index(delete_data)]
+                with open('income.csv', 'w', encoding='utf-8', newline='') as file:
+                    writer = csv.writer(file)
+                    for input_data in income_records:
+                        writer.writerow(input_data)
+                return True
+        elif delete_data in expense_records:
+            with open('etc.csv','r',encoding='utf-8') as file:
+                reader = csv.reader(file)
+                new_index = int(list(reader)[0][1]) + 1
 
-        # 삭제
-        del income_records[index - 1]
-        with open('income.csv', 'w', encoding='utf-8', newline='') as file:
-            writer = csv.writer(file)
-            for input_data in income_records:
-                writer.writerow(input_data)
-        return True
+                # 남은 금액 변경
+                etc_price += int(delete_data[PRICE])
+                with open('etc.csv','w',encoding='utf-8') as file:
+                    file.write(str(etc_price)+','+str(new_index))
 
-    # index가 지출 부분을 가르킬 경우
-    elif index <= len(income_records) + len(expense_records):
-        etc_price = read_etc_price()
-        delete_data = expense_records[index - len(income_records) - 1]
+                # 카테고리 가격 변경
+                delete_to_category(delete_data, 'expense')
 
-        with open('etc.csv','r',encoding='utf-8') as file:
-          reader = csv.reader(file)
-          new_index = int(list(reader)[0][1]) + 1
-
-        # 남은 금액 변경
-        etc_price += int(delete_data[PRICE])
-        with open('etc.csv','w',encoding='utf-8') as file:
-            file.write(str(etc_price)+','+str(new_index))
-
-        # 카테고리 가격 변경
-        delete_to_category(delete_data, 'expense')
-
-        # 삭제
-        del expense_records[index - len(income_records) - 1]
-        with open('expense.csv', 'w', encoding='utf-8', newline='') as file:
-            writer = csv.writer(file)
-            for input_data in expense_records:
-                writer.writerow(input_data)
-        return True
+                # 삭제
+                del expense_records[expense_records.index(delete_data)]
+                with open('expense.csv', 'w', encoding='utf-8', newline='') as file:
+                    writer = csv.writer(file)
+                    for input_data in expense_records:
+                        writer.writerow(input_data)
+                return True
+        else:
+            return False
     else:
         return False
 
