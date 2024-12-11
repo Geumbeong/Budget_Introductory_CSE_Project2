@@ -112,6 +112,7 @@ def category_remove(category_name, category_type):
     updated_rows = []
     category_found = False
 
+    # category.csv 업데이트
     with open('category.csv', 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
@@ -122,7 +123,7 @@ def category_remove(category_name, category_type):
             if (category_type in ["i", "income"] and row[0].strip() == category_name) or \
                (category_type in ["e", "expense"] and row[0].strip() == category_name):
                 category_found = True
-                updated_rows.append([f"*{row[0]}", row[1]])  # 카테고리 이름 앞에 "*" 추가
+                updated_rows.append([f"*{row[0]}", row[1]])
             else:
                 updated_rows.append(row)
 
@@ -135,19 +136,41 @@ def category_remove(category_name, category_type):
         print(f"오류: '{category_name}' 카테고리를 '{category_type}' 유형에서 찾을 수 없습니다.")
         return
 
+    # income.csv 또는 expense.csv 업데이트
     filename = 'income.csv' if category_type in ["i", "income"] else 'expense.csv'
     updated_entries = []
 
     with open(filename, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
-            if row and row[CATEGORY_INPUT] == category_name:
-                row[CATEGORY_INPUT] = f"*{row[CATEGORY_INPUT]}"
+            if row:
+                str_row = ','.join(row[CATEGORY_INPUT:])
+                categories = str_row[str_row.find('[')+1:str_row.find(']')].split(',')
+                updated_categories = [f"*{cat.strip()}" if cat.strip() == category_name else cat.strip() for cat in categories]
+                reason = str_row[str_row.find(']') + 1:].strip() if str_row.find(']') < len(str_row) else ''
+                reason = reason.replace(',', '')
+                
+                row = row[:CATEGORY_INPUT]
+                row.append(f"[{'/'.join(updated_categories)}]")
+                if reason:
+                    row.append(reason)
+
             updated_entries.append(row)
 
     with open(filename, 'w', encoding='utf-8', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(updated_entries)
+
+    with open(filename, 'r', encoding='utf-8') as file:
+        content = file.read()
+
+    content = content.replace('/', ',')
+
+    with open(filename, 'w', encoding='utf-8') as file:
+        file.write(content)
+
+    print(f"{filename} 파일에서 '{category_name}' 카테고리가 처리되었습니다.")
+
 
 # 카테고리 목록 출력 함수
 def category_list_print():
