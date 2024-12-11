@@ -107,23 +107,32 @@ def category_add(category_name, category_type):
         writer.writerows(updated_rows)
     print(f"카테고리 '{category_name}'이(가) 추가되었습니다.")
 
-# 카테고리 삭제 함수
 def category_remove(category_name, category_type):
     updated_rows = []
     category_found = False
 
-    # category.csv 업데이트
-    with open('category.csv', 'r', encoding='utf-8') as file:
+    with open('etc.csv', 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for row in reader:
+            if row[0] == "수입":
+                uncategorized_income = row[1]
+            elif row[0] == "지출":
+                uncategorized_expense = row[1]
+
+    uncategorized_category = uncategorized_income if category_type in ["i", "income"] else uncategorized_expense
+
+    with open('category.csv', 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        is_expense_section = False
+        for row in reader:
             if row and row[0] == "#":
+                is_expense_section = True
                 updated_rows.append(row)
                 continue
 
-            if (category_type in ["i", "income"] and row[0].strip() == category_name) or \
-               (category_type in ["e", "expense"] and row[0].strip() == category_name):
+            if (category_type in ["i", "income"] and not is_expense_section and row[0].strip() == category_name) or \
+               (category_type in ["e", "expense"] and is_expense_section and row[0].strip() == category_name):
                 category_found = True
-                updated_rows.append([f"*{row[0]}", row[1]])
             else:
                 updated_rows.append(row)
 
@@ -136,7 +145,6 @@ def category_remove(category_name, category_type):
         print(f"오류: '{category_name}' 카테고리를 '{category_type}' 유형에서 찾을 수 없습니다.")
         return
 
-    # income.csv 또는 expense.csv 업데이트
     filename = 'income.csv' if category_type in ["i", "income"] else 'expense.csv'
     updated_entries = []
 
@@ -144,13 +152,17 @@ def category_remove(category_name, category_type):
         reader = csv.reader(file)
         for row in reader:
             if row:
-                str_row = ','.join(row[CATEGORY_INPUT:])
+                str_row = ','.join(row[3:])
                 categories = str_row[str_row.find('[')+1:str_row.find(']')].split(',')
-                updated_categories = [f"*{cat.strip()}" if cat.strip() == category_name else cat.strip() for cat in categories]
+                updated_categories = [cat.strip() for cat in categories if cat.strip() != category_name]
+
+                if not updated_categories:
+                    updated_categories = [uncategorized_category]
+
                 reason = str_row[str_row.find(']') + 1:].strip() if str_row.find(']') < len(str_row) else ''
                 reason = reason.replace(',', '')
-                
-                row = row[:CATEGORY_INPUT]
+
+                row = row[:3]
                 row.append(f"[{'/'.join(updated_categories)}]")
                 if reason:
                     row.append(reason)
@@ -161,16 +173,7 @@ def category_remove(category_name, category_type):
         writer = csv.writer(file)
         writer.writerows(updated_entries)
 
-    with open(filename, 'r', encoding='utf-8') as file:
-        content = file.read()
-
-    content = content.replace('/', ',')
-
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(content)
-
-    print(f"{filename} 파일에서 '{category_name}' 카테고리가 처리되었습니다.")
-
+    print(f"{filename} 파일에서 '{category_name}' 카테고리가 처리되었으며, 빈 카테고리는 미분류 항목으로 이동되었습니다.")
 
 # 카테고리 목록 출력 함수
 def category_list_print():
