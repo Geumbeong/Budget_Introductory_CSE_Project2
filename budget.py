@@ -1251,6 +1251,19 @@ def process_empty_categories(file_name, uncategorized_category, old_category_nam
 
 # 미분류 항목 이름을 수정하고 관련 파일에 반영하는 함수
 def update_uncategorized_name(new_income_name, new_expense_name):
+
+    def validate_and_format_name(name):
+        if not name.isalnum():
+            raise ValueError("오류: 이름에는 특수문자를 사용할 수 없습니다.")
+        return f"*{name}"
+
+    try:
+        new_income_name = validate_and_format_name(new_income_name)
+        new_expense_name = validate_and_format_name(new_expense_name)
+    except ValueError as e:
+        print(e)
+        return
+    
     etc_data = []
     uncategorized_income, uncategorized_expense = None, None
 
