@@ -175,7 +175,7 @@ def category_remove(category_name, category_type):
 
     print(f"{filename} 파일에서 '{category_name}' 카테고리가 처리되었으며, 빈 카테고리는 미분류 항목으로 이동되었습니다.")
 
-# 카테고리 목록 출력 함수
+# 카테고리 출력 함수/ 카테고리 목록 출력 함수
 def category_list_print():
     display_items = []   # 출력할 항목만 저장하는 리스트
     current_section = 'income'
@@ -630,10 +630,12 @@ def print_date():
         
     category_num = print_specific_category()
 
-    if (not category_num == '*'):
+    if (not category_num == '#'):
         for entry in plist[:]:
             if category_num not in entry[3]:
                 plist.remove(entry)
+                continue
+ 
 
     for i in plist[:]:
             if i[1][0:4]!=year:
@@ -648,8 +650,9 @@ def print_date():
         for i in plist[:]:
             check = pd.to_datetime(i[1]).weekofyear
             if date!=check:
+                print(plist)
                 plist.remove(i)
-                
+
     
     count=1
 
@@ -690,7 +693,7 @@ def print_specific_category():
             print("잘못된 값을 입력하였습니다. 다시 입력해주세요. \n")
         elif specific_category_input == 'n':
             print()
-            return '*';
+            return '#';
         else:
             print("잘못된 값을 입력하였습니다. 다시 입력해주세요.\n")
         
@@ -927,7 +930,7 @@ def validate_and_parse_date(data_input):
             print("오류 : 입력하신 날짜 형식이 올바르지 않습니다. (현행 그레고리력에 존재하는 날짜가 아닙니다.)")
             return False
     else:
-        print("오류 : 입력하신 날짜 형식이 올바르지 않습니다. 허용되는 형식은 YYYY-MM-DD, YYYY/MM/DD, YYYY,MM,DD입니다.")
+        print("오류 : 입력하신 날짜 형식이 올바르지 않습니다. 허용되는 형식은 YYYY-MM-DD, YYYY/MM/DD 입니다.")
         return False
 
 def validate_number(income_expense_input):
