@@ -578,6 +578,10 @@ def print_date():
     for i in plist:
         elist=[]
         for j in i[3:]:
+            if '*' in j:
+                elist.append('')
+                i.remove(j)
+                break
             if ']' in j:
                 if '[' not in j:
                     elist.append(j[:len(j)-1])
@@ -658,7 +662,9 @@ def print_date():
             print(i[2]+'    ', end=' ')
         else:
             print('    '+i[2], end=' ')
-        print(i[3], end=' ')
+        print('[', end='')
+        print(', '.join(i[3]), end='')
+        print(']', end=' ')
         if len(i)==6:
             print(i[len(i)-2])
         else:
@@ -1030,6 +1036,10 @@ def inex_period_records():
     for i in plist:
         elist=[]
         for j in i[3:]:
+            if '*' in j:
+                elist.append('')
+                i.remove(j)
+                break
             if ']' in j:
                 if '[' not in j:
                     elist.append(j[:len(j)-1])
@@ -1054,7 +1064,9 @@ def inex_period_records():
             print(i[2]+'    ', end=' ')
         else:
             print('    '+i[2], end=' ')
-        print(i[3], end=' ')
+        print('[', end='')
+        print(', '.join(i[3]), end='')
+        print(']', end=' ')
         if len(i)==6:
             print(i[len(i)-2])
         else:
