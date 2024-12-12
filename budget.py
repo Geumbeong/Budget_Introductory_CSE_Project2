@@ -509,7 +509,7 @@ def category():
             elif menu_input[0] in ['h', 'home']:
                 break
             else:
-                print("오류: 명령어가 올바르지 않습니다. (a/add, r/remove, h/home 중 하나를 입력하세요)")
+                print("오류: 명령어가 올바르지 않습니다. (a/add, r/remove, u/update, h/home 중 하나를 입력하세요)")
 
         except Exception as e:
             print(f"예기치 않은 오류가 발생했습니다: {e}")
