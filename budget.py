@@ -703,7 +703,7 @@ def add_to_category(income_expense_input, validate_income_expense):
     # 파일 읽기
     with open('category.csv', 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        current_section = None
+        current_section = 'income'
 
         for row in reader:
             if row:  # 비어있지 않은 행에 대해서만 처리
@@ -711,70 +711,67 @@ def add_to_category(income_expense_input, validate_income_expense):
                     # 수입/지출 구분점에서 #을 추가하고, current_section 업데이트
                     updated_rows.append(row)
                     current_section = 'expense'
-                elif current_section is None:
-                    # # 전이면 수입 섹션
-                    current_section = 'income'
-                    updated_rows.append(row)
-                    
-                # 카테고리 확인
-                category = row[0].strip()  # 카테고리 이름
-                # 두 번째 열이 있을 경우에만 금액 처리
-                if len(row) > 1:
-                    try:
-                        amount = int(row[1].strip())  # 기존 금액
-                    except ValueError:
-                        amount = 0  # 금액이 숫자가 아닌 경우 0으로 처리
                 else:
-                    amount = 0  # 두 번째 열이 없으면 금액을 0으로 처리
+                    # 카테고리 확인
+                    category = row[0].strip()  # 카테고리 이름
+                    # 두 번째 열이 있을 경우에만 금액 처리
+                    if len(row) > 1:
+                        try:
+                            amount = int(row[1].strip())  # 기존 금액
+                        except ValueError:
+                            amount = 0  # 금액이 숫자가 아닌 경우 0으로 처리
+                    else:
+                        amount = 0  # 두 번째 열이 없으면 금액을 0으로 처리
 
-                
-                i = 0
-                start_category = False
-
-                while(not category_found):
-                    category_name = income_expense_input[CATEGORY_INPUT + i]  # 입력된 카테고리 이름
-
-                    # 아무 카테고리에도 속하지 않을 경우
-                    if category_name == "[]":
-                        category_found = True
-
-                    # 맨 처음 괄호
-                    try:
-                        if not start_category:
-                            if category_name[0] == "[":
-                                category_name = category_name[1:]
-                                start_category = True
-                            else:
-                                return False
-                    except IndexError:
-                        # 빈 문자열일 경우
-                        #is_error = True
-                        return False
-
-                    # 맨 마지막 괄호
-                    try:
-                        if category_name[len(category_name) - 1] == "]" and start_category:
-                            category_name = category_name[:-1]
-                            category_count = i + 1
-                    except IndexError:
-                        # is_error = True
-                        return False
-
-                    # 해당 카테고리가 맞고, 올바른 섹션인지 확인
-                    if category == category_name and current_section == validate_income_expense:
-                        amount += amount_to_add  # 금액 업데이트  
-                        category_validated += 1
-                        if category_count == category_validated:
-                            category_found = True
                     
-                    i += 1
-                    # 입력받은 카테고리가 없을 경우
-                    if len(income_expense_input) <= CATEGORY_INPUT + i:
-                        break
+                    i = 0
+                    start_category = False
+
+                    category_count = -1
+
+                    while(not category_found):
+                        category_name = income_expense_input[CATEGORY_INPUT + i]  # 입력된 카테고리 이름
+
+                        # 아무 카테고리에도 속하지 않을 경우
+                        if category_name == "[]":
+                            category_found = True
+
+                        # 맨 처음 괄호
+                        try:
+                            if not start_category:
+                                if category_name[0] == "[":
+                                    category_name = category_name[1:]
+                                    start_category = True
+                                else:
+                                    return False
+                        except IndexError:
+                            # 빈 문자열일 경우
+                            return False
+
+                        # 맨 마지막 괄호
+                        try:
+                            if category_name[len(category_name) - 1] == "]" and start_category:
+                                category_name = category_name[:-1]
+                                category_count = i + 1
+                        except IndexError:
+                            # is_error = True
+                            return False
+
+                        # 해당 카테고리가 맞고, 올바른 섹션인지 확인
+                        if category == category_name and current_section == validate_income_expense:
+                            amount += amount_to_add  # 금액 업데이트  
+                            category_validated += 1
+                            if category_count == category_validated and not category_count == -1:
+                                category_found = True
+                        
+                        i += 1
+                        # 입력받은 카테고리가 없을 경우
+                        if len(income_expense_input) <= CATEGORY_INPUT + i:
+                            break
 
 
-                # 업데이트된 행 추가
-                updated_rows.append([category, amount])
+                    # 업데이트된 행 추가
+                    updated_rows.append([category, amount])
 
 
     # 카테고리를 찾지 못했을 경우 False 반환
